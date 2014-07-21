@@ -20,15 +20,15 @@ the histogram, mean and median were altered significantly.
 
 
 ```r
-steps_day <- tapply(data$steps, data$date, sum)
-hist(steps_day, breaks = 8, main = 'Steps per day', xlab = 'Steps')
+sd <- aggregate(steps ~ date, data, 'sum')
+hist(sd$steps, breaks = 8, main = 'Steps per day', xlab = 'Steps')
 ```
 
 ![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2.png) 
 
 ```r
-mean <- mean(steps_day, na.rm = TRUE)
-median <- median(steps_day, na.rm = TRUE)
+mean <- mean(sd$steps, na.rm = TRUE)
+median <- median(sd$steps, na.rm = TRUE)
 # Results are embedded just bellow in text
 ```
 
@@ -43,19 +43,15 @@ intervals.
 
 
 ```r
-steps_int <- aggregate(data$steps, by = list(i = data$interval),
-                       mean, na.rm = TRUE)
-plot(steps_int$i, steps_int$x, type = 'l',
-     main = 'Steps per 5-minute interval',
-     xlab = 'Interval',
-     ylab = 'Average steps taken')
+si <- aggregate(steps ~ interval, data, 'mean', na.rm = TRUE)
+plot(si, type = 'l', main = 'Steps per 5-minute interval',
+     xlab = 'Interval', ylab = 'Average steps taken')
 ```
 
 ![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3.png) 
 
 ```r
-max_index <- which.max(steps_int[, 'x'])
-interval <- steps_int$i[max_index]
+interval <- si$interval[which.max(si$steps)]
 # Results are embedded just bellow in text
 ```
 
@@ -85,7 +81,7 @@ some times is just simpler (notice $steps\_int$ was previously calculated):
 ```r
 data2 <- data
 for (i in na_index) {
-	data2[i, 'steps'] <- steps_int[steps_int$i == data2[i, 'interval'], 'x']
+	data2[i, 'steps'] <- si[si$interval == data2[i, 'interval'], 'steps']
 }
 ```
 
@@ -93,15 +89,15 @@ Analyzing the new data frame with no missing values:
 
 
 ```r
-steps_day2 <- tapply(data2$steps, data2$date, sum)
-hist(steps_day2, breaks = 8, main = 'Steps per day 2', xlab = 'Steps')
+sd2 <- aggregate(steps ~ date, data2, 'sum')
+hist(sd2$steps, breaks = 8, main = 'Steps per day 2', xlab = 'Steps')
 ```
 
 ![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6.png) 
 
 ```r
-mean2 <- mean(steps_day2, na.rm = TRUE)
-median2 <- median(steps_day2, na.rm = TRUE)
+mean2 <- mean(sd2$steps, na.rm = TRUE)
+median2 <- median(sd2$steps, na.rm = TRUE)
 # Results are embedded just bellow in text
 ```
 
@@ -115,7 +111,7 @@ peak in the histogram (the other bars are unnaltered).
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
-A new column will be added to $data2$ to represent if that day is Saturday or
+A new column will be added to $data$ to represent if that day is Saturday or
 Sunday (weekend day):
 
 
@@ -128,21 +124,8 @@ Plotting the data:
 
 ```r
 library(lattice)
-# Weekends
-steps_int_we <- aggregate(data[data$iswe, ]$steps,
-                          by = list(i = data[data$iswe, ]$interval),
-                          mean, na.rm = TRUE)
-steps_int_we$iswe <- rep(factor('weekend'), length(steps_int_we))
-# Weekdays
-steps_int_wd <- aggregate(data[!data$iswe, ]$steps,
-                          by = list(i = data[!data$iswe, ]$interval),
-                          mean, na.rm = TRUE)
-steps_int_wd$iswe <- rep(factor('weekday'), length(steps_int_wd))
-# Merge data
-steps_int_iswe <- merge(steps_int_we, steps_int_wd, all = TRUE)
-# Plot data
-xyplot(x ~ i | iswe, steps_int_iswe, type = 'l', xlab = 'Interval',
-       ylab = 'Number of steps')
+summary <- aggregate(steps ~ interval + iswe, data, 'mean')
+xyplot(steps ~ interval | iswe, summary, layout = c(1, 2), type = 'l')
 ```
 
 ![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8.png) 
@@ -156,4 +139,3 @@ walk than in the afternoon when going back home.
 
 Thanks for taking the time to read this and excuse any language mistakes, which
 I bet may make the reading more difficult. :-)
-
