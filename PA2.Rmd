@@ -2,7 +2,7 @@
 
 ## Synopsis
 
-This study tries to find which types of severe weather events have been more harmful with respect to population health and which have had the greatest economic consequences. All the study is fully reproducible and all the code is provided for that purpose within this document. The code has been written as short and clear as possible to facilitate undernstanding.
+This study tries to find which types of severe weather events have been more harmful with respect to population health and which have had the greatest economic consequences. All the study is fully reproducible and all the code is provided for that purpose within this document. The code has been written as short and clear as possible to facilitate understanding.
 
 Please, excuse any language faults in the document (English is not my mother tongue).
 
@@ -96,6 +96,8 @@ barplot(worst_fatalities$FATALITIES / 1000, col = palette,
         names.arg = worst_fatalities$EVTYPE, las = 2, cex.names = 0.8)
 ```
 
+Tornados cause both the highest number of injuries and fatalities. While the number of injuries caused by tornados is much higher than those caused by any other factor, surprisingly, the second factor causing the highest number of fatalities is the excessive heat, causing more than 35% of the number of fatalities caused by tornados.
+
 The graphic bellow show the weather events which have resulted in the worst economic damage between 1950 and 2011. Notice the costs are in billions of dollars.
 
 ```{r, cache = TRUE}
@@ -105,3 +107,5 @@ barplot(worst_dmg$ALLDMG / 1e9, col = palette,
         main = 'Total economic damage', ylab = 'Costs (billions of dollars)',
         names.arg = worst_dmg$EVTYPE, las = 2, cex.names = 0.8)
 ```
+
+Although tornados are the worst events for human health, they are just in third position when talking about economic costs. The highest economic costs in this case are caused by floods, followed by hurricanes/typhoons.
