@@ -1,0 +1,107 @@
+# Economic and health consecuences of severe weather events in the USA
+
+## Synopsis
+
+This study tries to find which types of severe weather events have been more harmful with respect to population health and which have had the greatest economic consequences. All the study is fully reproducible and all the code is provided for that purpose within this document. The code has been written as short and clear as possible to facilitate undernstanding.
+
+Please, excuse any language faults in the document (English is not my mother tongue).
+
+## Data Processing
+
+### Downloading the data
+
+Data is automatically downloaded if not present already in the system. In order to accelerate the process and minimize memory usage, only the required columns from the CSV file are loaded into a dataframe.
+
+```{r, cache = TRUE}
+data_source = 'https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2'
+if (!file.exists('data.csv.bz2'))
+	download.file(data_source, 'data.csv.bz2', method = 'curl')
+data_columns = c(rep('NULL', 7), NA, rep('NULL', 14), rep(NA, 6), rep('NULL', 9))
+df <- read.csv('data.csv.bz2', colClasses = data_columns)
+str(df)
+```
+
+### Processing for population health
+
+The sum of all the injuries and fatalities is calculated for each type of event.
+
+```{r, cache = TRUE}
+health_df <- aggregate(cbind(INJURIES, FATALITIES) ~ EVTYPE, df, 'sum')
+```
+
+Then, for plotting the results, only the worst events are selected.
+
+```{r, cache = TRUE}
+N_WORST <- 6
+worst_fatalities <- head(health_df[order(-health_df$FATALITIES), c('EVTYPE', 'FATALITIES')], N_WORST)
+worst_injuries <- head(health_df[order(-health_df$INJURIES), c('EVTYPE', 'INJURIES')], N_WORST)
+```
+
+### Processing for economic consequences
+
+Both property and crop damage are formed out of a rounded number (**PROPDMG** and **CROPDMG**) and a factor (**PROPDMGEXP**, **CROPDMGEXP**). In order to know the real costs, each number is to be multiplied by the corresponding factor, if this is the case.
+
+A function has been created to permorm this task over the dataframe.
+
+```{r, cache = TRUE}
+exp_multiply <- function(row, num, factor) {
+	if (row[factor] %in% c('h', 'H'))
+		return(as.numeric(row[num]) * 100)
+	if (row[factor] %in% c('k', 'K'))
+		return(as.numeric(row[num]) * 1000)
+	if (row[factor] %in% c('m', 'M'))
+		return(as.numeric(row[num]) * 1000000)
+	if (row[factor] %in% c('b', 'B'))
+		return(as.numeric(row[num]) * 1000000000)
+	return(as.numeric(row[num]))
+	
+}
+df['PROPDMG'] <- apply(df, 1, function(x) exp_multiply(x, 'PROPDMG', 'PROPDMGEXP'))
+df['CROPDMG'] <- apply(df, 1, function(x) exp_multiply(x, 'CROPDMG', 'CROPDMGEXP'))
+```
+
+Following the same procedure as before, the sum of the economic damage is calculated for each type of event. In this case, property and crop costs are not separated.
+
+```{r, cache = TRUE}
+economic_df <- aggregate(PROPDMG + CROPDMG ~ EVTYPE, df, 'sum')
+colnames(economic_df) <- c('EVTYPE', 'ALLDMG')
+```
+
+Then, for plotting the results, only the worst events are selected.
+
+```{r, cache = TRUE}
+worst_dmg <- head(economic_df[order(-economic_df$ALLDMG), ], N_WORST)
+```
+
+## Results
+
+The color brewer package is used in order to generate color palettes for the graphics.
+
+```{r}
+library(RColorBrewer)
+palette <- rev(brewer.pal(N_WORST, "YlOrRd"))
+```
+
+The graphics bellow show the weather events which have resulted in the highest injuries and fatalities between 1950 and 2011. Notice the numbers are in thousands of people.
+
+```{r, cache = TRUE}
+par(mfrow = c(1, 2), mar = c(10, 4.1, 4.1, 2.1))
+# Injuries
+barplot(worst_injuries$INJURIES / 1000, col = palette,
+        main = 'Injuries', ylab = 'Count (thousands)',
+        names.arg = worst_injuries$EVTYPE, las = 2, cex.names = 0.8)
+# Fatalities
+barplot(worst_fatalities$FATALITIES / 1000, col = palette,
+        main = 'Fatalities', ylab = 'Count (thousands)',
+        names.arg = worst_fatalities$EVTYPE, las = 2, cex.names = 0.8)
+```
+
+The graphic bellow show the weather events which have resulted in the worst economic damage between 1950 and 2011. Notice the costs are in billions of dollars.
+
+```{r, cache = TRUE}
+par(mar = c(10, 4.1, 4.1, 2.1))
+# Economic damage
+barplot(worst_dmg$ALLDMG / 1e9, col = palette,
+        main = 'Total economic damage', ylab = 'Costs (billions of dollars)',
+        names.arg = worst_dmg$EVTYPE, las = 2, cex.names = 0.8)
+```
